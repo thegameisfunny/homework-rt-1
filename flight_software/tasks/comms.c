@@ -30,7 +30,7 @@ void* comms_task(void* arg){
 	}
 	struct downlink_frame frame;
 
-	// TODO: Open the telemetry queue for sending telemetry packets
+	// TODO: Open the telemetry queue for sending telemetry packets (IMHO: I think this should be opened also to receive)
 	mqd_t tlm_queue;
 	if (tlm_queue = mq_open(TLM_QUEUE, O_WRONLY) == (mqd_t)-1) {
 		perror("accelerometers: mq_open");
@@ -43,24 +43,39 @@ void* comms_task(void* arg){
 
 		// 1. TODO: handle the next activation of the taskk
 		// SUGGESTION: Wait for the radio transmitter (i.e., the tx-ready event)
-		if(tx_ready
+		mq_receive(tx_ready_qd, (char *)&tx_ready, sizeof(tx_ready), 0);
 		// 2. Save the release time of this activation
 		th->release = tx_ready.time;
 
 		// 3. TODO: Start a new, empty frame, for this transmission slot
 		// SUGGESTION: use the frame_start function (rtos/drivers/radio/radio.h) to start a new frame
-
+		frame_start(&frame, tx_ready.slot);
 		// 4. TODO: Move the telemetry packets waiting in the queue into the downlink frame, until the queue is empty
 		// SUGGESTION: Use mq_receive to get telemetry packets from the telemetry queue
 		// SUGGESTION: Use frame_add(&frame, &packet, sizeof(packet)); to add the telemetry packet to the frame
-
+		mqd_t tlm_qr = mqopen(TLM_QUEUE, O_RDONLY|O_NONBLOCK); //Riapro la coda in lettura per poter leggere i valori
+		while((received = mq_receive(tlm_qr, (char *)&packet, sizeof(packet), 0))>=0){
+			frame_add(&frame, &packet, sizeof(packet));
+		}
+		mq_close(tlm_qr);//chiudo la coda quando finisco di leggere
 		// 5. Simulate the computation of the frame encoding
 		compute(th->wcet);
 
 		// 6. TODO: Send the frame to the radio downlink queue
-
+		if (mq_send(downlink_qd, (const char *)&frame, sizeof(frame), 0)==-1){
+				perror("comms: Error sending downlink frame");
+				break;
+			}
 		// 7. TODO: Check if the deadline was missed and, if so, send the report over the telemetry queue
 		// SUGGESTION: Use response_time_us(th) to get the response time 
 		// SUGGESTION: Use the tlm_pack_deadline function (telemetry.h) to pack the deadline miss telemetry packet
+		response_us = response_time_us(th);
+		if (response_us > th->deadline) {
+			tlm_pack_deadline(&packet, th->index, response_us, th->deadline);
+			if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
+				perror("comms: Error sending telemetry packet");
+				break;
+			}
+		}
 	}
 }
