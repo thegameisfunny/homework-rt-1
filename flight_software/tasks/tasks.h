@@ -5,6 +5,8 @@
 #include "schedule.h"
 #include "shared_resources.h"	
 
+//Aggiunta da me per perror()
+#include <stdio.h>
 
 /* These are the data structures each tasks uses for its state and shared resources. 
  * They are passed as arguments to the corresponding task functions at creation time.
