@@ -115,8 +115,8 @@ int main(void){
 
 	mqd_t tlm_queue = mq_open(TLM_QUEUE, O_CREAT, 0660, &tlm_attr);
 	if (tlm_queue == (mqd_t)-1) {
-		perror("mq_open (telemetry)");
-		exit(1);
+		fprintf(stderr, "mq_open (telemetry)\n");
+		return 1;
 	}
 	
 	// 5. TODO: Create the tasks objects (pthread_t)
