@@ -24,7 +24,7 @@ void* comms_task(void* arg){
 
 	// TODO: Open the downlink queue for sending frames to the radio
 	mqd_t downlink_qd;
-	if (downlink_qd = mq_open(RADIO_DOWNLINK_QUEUE, O_WRONLY) == (mqd_t)-1) {
+	if ((downlink_qd = mq_open(RADIO_DOWNLINK_QUEUE, O_WRONLY)) == (mqd_t)-1) {
 		perror("comms_task: mq_open (downlink)");
 		pthread_exit(NULL);
 	}
