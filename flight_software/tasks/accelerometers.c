@@ -58,7 +58,7 @@ void* accelerometers_task(void* arg){
 		if (response_us > th->deadline) {
 			tlm_pack_deadline(&packet, th->index, response_us, th->deadline);
 			if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
-				perror("Error sending telemetry packet");
+				perror("Accelerometer: Error sending telemetry packet");
 				break;
 			}
 		}
