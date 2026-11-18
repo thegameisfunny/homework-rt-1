@@ -89,7 +89,7 @@ void* distribution_task(void* arg){
 		if (response_us > th->deadline) {
 			tlm_pack_deadline(&packet, th->index, response_us, th->deadline);
 			if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
-				perror("Asi_met: Error sending telemetry packet");
+				perror("Distribution: Error sending deadline miss telemetry packet");
 				break;
 			}
 		}
@@ -97,5 +97,9 @@ void* distribution_task(void* arg){
 		// SUGGESTION: Use response_time_us(th) to get the response time 
 		// SUGGESTION: Use the tlm_pack_timing function (telemetry.h) to pack the timing telemetry packet
 		tlm_pack_timing(&packet, response_us, th->deadline);
+		if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
+			perror("Distribution: Error sending timing telemetry packet");
+			break;
+		}
 	}
 }
