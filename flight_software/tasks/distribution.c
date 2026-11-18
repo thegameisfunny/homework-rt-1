@@ -57,18 +57,18 @@ void* distribution_task(void* arg){
 		// 5a. TODO: Read the accelerometers data collected from the bus and store it in the accelerometers double buffer
 		// SUGGESTION: Don't forget to swap the filling and ready buffers 
 		pthread_mutex_lock(&accelerometers_memory->lock);
-		accelerometers_memory->fillng = data.accelerometers;
-		completed_accelerometers = accelerometers_memory->fillng;
-		accelerometers_memory->fillng = accelerometers_memory->ready;
+		accelerometers_memory->filling = data.accelerometers;
+		completed_accelerometers = accelerometers_memory->filling;
+		accelerometers_memory->filling = accelerometers_memory->ready;
 		accelerometers_memory->ready = completed_accelerometers;		
 		pthread_mutex_unlock(&accelerometers_memory->lock);
 		
 		// 5b. TODO: Read the altimeter data collected from the bus and store it in the altimeter double buffer
 		// SUGGESTION: Don't forget to swap the filling and ready buffers  
 		pthread_mutex_lock(&altimeter_memory->lock);
-		altimeter_memory->fillng = data.altimeter;
-		completed_altimeter = altimeter_memory->fillng;
-		altimeter_memory->fillng = altimeter_memory->ready;
+		altimeter_memory->filling = data.altimeter;
+		completed_altimeter = altimeter_memory->filling;
+		altimeter_memory->filling = altimeter_memory->ready;
 		altimeter_memory->ready = completed_altimeter;		
 		pthread_mutex_unlock(&altimeter_memory->lock);
 
