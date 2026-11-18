@@ -97,6 +97,7 @@ int main(void){
 	imp.images = 0;
 
 	// 2. TODO: Lock all current and future memory allocations of the program in RAM
+	//TESTING
 
 	// 3. Start the system
 	if (system_start() != 0) {
