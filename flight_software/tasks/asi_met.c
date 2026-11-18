@@ -37,7 +37,7 @@ void* asi_met_task(void* arg){
 		num_readings = 0;
 		sum_temperature = 0;
 		sum_pressure = 0;
-		while (pipe_read(&reading, sizeof(reading)){ //pipe_read ritorna 0 o 1 se ha successo, dunque se la pipe è vuota da zero
+		while (pipe_read(&reading, sizeof(reading))){ //pipe_read ritorna 0 o 1 se ha successo, dunque se la pipe è vuota da zero
 			if(reading.valid){
 				num_readings++;
 				sum_temperature += reading.temperature_C;
