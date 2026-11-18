@@ -53,7 +53,7 @@ void* comms_task(void* arg){
 		// 4. TODO: Move the telemetry packets waiting in the queue into the downlink frame, until the queue is empty
 		// SUGGESTION: Use mq_receive to get telemetry packets from the telemetry queue
 		// SUGGESTION: Use frame_add(&frame, &packet, sizeof(packet)); to add the telemetry packet to the frame
-		mqd_t tlm_qr = mqopen(TLM_QUEUE, O_RDONLY|O_NONBLOCK); //Riapro la coda in lettura per poter leggere i valori
+		mqd_t tlm_qr = mq_open(TLM_QUEUE, O_RDONLY|O_NONBLOCK); //Riapro la coda in lettura per poter leggere i valori
 		while((received = mq_receive(tlm_qr, (char *)&packet, sizeof(packet), 0))>=0){
 			frame_add(&frame, &packet, sizeof(packet));
 		}
