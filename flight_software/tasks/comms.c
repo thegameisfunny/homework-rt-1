@@ -15,7 +15,7 @@ void* comms_task(void* arg){
 
 	// TODO: Open the TX ready queue to receive tx-ready event
 	mqd_t tx_ready_qd;
-	if (tx_ready_qd = mq_open(RADIO_TX_READY_QUEUE, O_RDONLY) == (mqd_t)-1) {
+	if ((tx_ready_qd = mq_open(RADIO_TX_READY_QUEUE, O_RDONLY)) == (mqd_t)-1) {
 		perror("comms_task: mq_open (tx_ready)");
 		pthread_exit(NULL);
 	}
@@ -32,8 +32,8 @@ void* comms_task(void* arg){
 
 	// TODO: Open the telemetry queue for sending telemetry packets (IMHO: I think this should be opened also to receive)
 	mqd_t tlm_queue;
-	if (tlm_queue = mq_open(TLM_QUEUE, O_WRONLY) == (mqd_t)-1) {
-		perror("accelerometers: mq_open");
+	if ((tlm_queue = mq_open(TLM_QUEUE, O_WRONLY)) == (mqd_t)-1) {
+		perror("comms_task: mq_open");
 		pthread_exit(NULL);
 	}
 	struct tlm_packet packet;

@@ -17,8 +17,8 @@ void* altimeter_task(void* arg){
 
 	// TODO: Open the telemetry queue for sending telemetry packets
 	mqd_t tlm_queue;
-	if (tlm_queue = mq_open(TLM_QUEUE, O_WRONLY) == (mqd_t)-1) {
-		perror("accelerometers: mq_open");
+	if ((tlm_queue = mq_open(TLM_QUEUE, O_WRONLY)) == (mqd_t)-1) {
+		perror("altimeter: mq_open");
 		pthread_exit(NULL);
 	}
 	struct tlm_packet packet;		

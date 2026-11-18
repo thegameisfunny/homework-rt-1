@@ -19,7 +19,7 @@ void* asi_met_task(void* arg){
 
 	// TODO: open the telemetry queue for sending telemetry packets
 	mqd_t tlm_queue;
-	if (tlm_queue = mq_open(TLM_QUEUE, O_WRONLY) == (mqd_t)-1) {
+	if ((tlm_queue = mq_open(TLM_QUEUE, O_WRONLY)) == (mqd_t)-1) {
 		perror("asi_met: mq_open");
 		pthread_exit(NULL);
 	}

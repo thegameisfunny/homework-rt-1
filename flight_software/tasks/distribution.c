@@ -25,7 +25,7 @@ void* distribution_task(void* arg){
 
 	// TODO: Open the bus transfer complete queue to receive the transfer complete event
 	mqd_t bus_transfer_complete_qd;
-	if (bus_transfer_complete_qd = mq_open(BUS_TRANSFER_COMPLETE_QUEUE, O_RDONLY) == (mqd_t)-1) {
+	if ((bus_transfer_complete_qd = mq_open(BUS_TRANSFER_COMPLETE_QUEUE, O_RDONLY)) == (mqd_t)-1) {
 		perror("distribution: mq_open (bus transfer)");
 		pthread_exit(NULL);
 	}
@@ -33,7 +33,7 @@ void* distribution_task(void* arg){
 
 	// TODO: Open the telemetry queue for sending telemetry packets
 	mqd_t tlm_queue;
-	if (tlm_queue = mq_open(TLM_QUEUE, O_WRONLY) == (mqd_t)-1) {
+	if ((tlm_queue = mq_open(TLM_QUEUE, O_WRONLY)) == (mqd_t)-1) {
 		perror("distribution: mq_open (telemetry)");
 		pthread_exit(NULL);
 	}

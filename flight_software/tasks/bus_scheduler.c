@@ -25,7 +25,7 @@ void* bus_scheduler_task(void* arg){
 
 	// TODO: Open the telemetry queue for sending telemetry packets
 	mqd_t tlm_queue;
-	if (tlm_queue = mq_open(TLM_QUEUE, O_WRONLY) == (mqd_t)-1) {
+	if ((tlm_queue = mq_open(TLM_QUEUE, O_WRONLY)) == (mqd_t)-1) {
 		perror("bus_scheduler: mq_open");
 		pthread_exit(NULL);
 	}
@@ -62,7 +62,7 @@ void* bus_scheduler_task(void* arg){
 		if (response_us > th->deadline) {
 			tlm_pack_deadline(&packet, th->index, response_us, th->deadline);
 			if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
-				perror("Accelerometer: Error sending telemetry packet");
+				perror("bus_scheduler: Error sending telemetry packet");
 				break;
 			}
 		}
