@@ -97,7 +97,7 @@ int main(void){
 	imp.images = 0;
 
 	// 2. TODO: Lock all current and future memory allocations of the program in RAM
-	//TESTING
+	mlockall(MCL_CURRENT | MCL_FUTURE);//i flag MCL_CURRENT e MCL_FUTURE sono stati visti dalla funzione del manuale man 2 mlockall
 
 	// 3. Start the system
 	if (system_start() != 0) {
@@ -105,15 +105,76 @@ int main(void){
 		return 1;
 	}
 
-	// 4. TODO:Create the telemetry queue
-	// SUGGESTION: look at shared_resources.h and telemetry.h for the configurations types and parameters
+	// 4. Create the telemetry queue
+	struct mq_attr tlm_attr;
 
+	tlm_attr.mq_flags = 0;
+	tlm_attr.mq_maxmsg = TLM_MAX;
+	tlm_attr.mq_msgsize = sizeof(struct tlm_packet);
+	tlm_attr.mq_curmsgs = 0;
+
+	mqd_t tlm_queue = mq_open(TLM_QUEUE, O_CREAT, 0660, &tlm_attr);
+	if (tlm_queue == (mqd_t)-1) {
+		perror("mq_open (telemetry)");
+		exit(1);
+	}
+	
 	// 5. TODO: Create the tasks objects (pthread_t)
+	pthread_t accelerometers_thread;
+	pthread_t altimeter_thread;
+	pthread_t asi_met_thread;
+	pthread_t bus_scheduler_thread;
+	pthread_t comms_thread;
+	pthread_t distribution_thread;
 
 	// 6. TODO: Initialize the mutexes (shared_resources.h locks)
+	pthread_mutexattr_t mutexattr;
+	pthread_mutexattr_init(&mutexattr);
+	pthread_mutexattr_setprotocol(&mutexattr, PTHREAD_PRIO_INHERIT);
+	pthread_mutex_init(&accelerometers_memory.lock, &mutexattr);
+	pthread_mutex_init(&altimeter_memory.lock, &mutexattr);
+	pthread_mutex_init(&cycle_check.lock, &mutexattr);
+	pthread_mutexattr_destroy(&mutexattr);
 
 	// 7. TODO: Configure and initialize the real-time threads (CPU pinning included)
-	
+	struct sched_param myparam;
+	pthread_attr_t myattr;
+	pthread_attr_init(&myattr);
+	pthread_attr_setschedpolicy(&myattr, SCHED_FIFO);
+	pthread_attr_setinheritsched(&myattr, PTHREAD_EXPLICIT_SCHED);
+	//accelerometers
+	myparam.sched_priority = accelerometers.th.priority;
+	pthread_attr_setschedparam(&myattr, &myparam);
+	pthread_create(&accelerometers_thread, &myattr, accelerometers_task, &accelerometers);
+	pthread_setaffinity_np(accelerometers_thread, sizeof(cpu_set_t), RT_CPU);
+	//altimeter
+	myparam.sched_priority = altimeter.th.priority;
+	pthread_attr_setschedparam(&myattr, &myparam);
+	pthread_create(&altimeter_thread, &myattr, altimeter_task, &altimeter);
+	pthread_setaffinity_np(altimeter_thread, sizeof(cpu_set_t), RT_CPU);
+	//asi_met
+	myparam.sched_priority = asi_met.th.priority;
+	pthread_attr_setschedparam(&myattr, &myparam);
+	pthread_create(&asi_met_thread, &myattr, asi_met_task, &asi_met);
+	pthread_setaffinity_np(asi_met_thread, sizeof(cpu_set_t), RT_CPU);
+	//bus_scheduler
+	myparam.sched_priority = bus_scheduler.th.priority;
+	pthread_attr_setschedparam(&myattr, &myparam);
+	pthread_create(&bus_scheduler_thread, &myattr, bus_scheduler_task, &bus_scheduler);
+	pthread_setaffinity_np(bus_scheduler_thread, sizeof(cpu_set_t), RT_CPU);
+	//comms
+	myparam.sched_priority = comms.th.priority;
+	pthread_attr_setschedparam(&myattr, &myparam);
+	pthread_create(&comms_thread, &myattr, comms_task, &comms);
+	pthread_setaffinity_np(comms_thread, sizeof(cpu_set_t), RT_CPU);
+	//distribution
+	myparam.sched_priority = distribution.th.priority;
+	pthread_attr_setschedparam(&myattr, &myparam);
+	pthread_create(&distribution_thread, &myattr, distribution_task, &distribution);
+	pthread_setaffinity_np(distribution_thread, sizeof(cpu_set_t), RT_CPU);
+
+	pthread_attr_destroy(&myattr);
+
 	// 8. TODO: Configure and create the OPTIONAL IMP task (not real-time)
 
 	// 9. Wait for the user to quit the program
@@ -125,13 +186,31 @@ int main(void){
 	} while (c != 'q' && c != EOF);
 
 	// 10. TODO: Clean up the threads
+	pthread_cancel(accelerometers_thread);
+	pthread_cancel(altimeter_thread);
+	pthread_cancel(asi_met_thread);
+	pthread_cancel(bus_scheduler_thread);
+	pthread_cancel(comms_thread);
+	pthread_cancel(distribution_thread);
+
+	pthread_join(accelerometers_thread, NULL);
+	pthread_join(altimeter_thread, NULL);
+	pthread_join(asi_met_thread, NULL);
+	pthread_join(bus_scheduler_thread, NULL);
+	pthread_join(comms_thread, NULL);
+	pthread_join(distribution_thread, NULL);
 
 	// 11. Stop the system
 	system_stop();
 
 	// 12. TODO: Clean up the telemetry queue
+	mq_close(tlm_queue);
+	mq_unlink(TLM_QUEUE);
 
 	// 13. TODO: Destroy the mutexes
+	pthread_mutex_destroy(&accelerometers_memory.lock);
+	pthread_mutex_destroy(&altimeter_memory.lock);
+	pthread_mutex_destroy(&cycle_check.lock);
 
 	return 0;
 }
