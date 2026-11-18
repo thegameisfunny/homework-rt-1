@@ -41,7 +41,7 @@ void* bus_scheduler_task(void* arg){
 		wait_next_activation(th);
 		// 1. TODO: Check the distribution done flag and clear it
 		pthread_mutex_lock(&cycle_check->lock);
-		distribution_done = &cycke_check->distribution_done;
+		distribution_done = &cycle_check->distribution_done;
 		cycle_check->distribution_done = false;
 		pthread_mutex_unlock(&cycle_check->lock);
 		// 2. TODO: If the distribution flag was not set, reset the system
