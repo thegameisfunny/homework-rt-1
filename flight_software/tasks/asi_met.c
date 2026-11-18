@@ -40,7 +40,7 @@ void* asi_met_task(void* arg){
 		while (pipe_read(&reading, sizeof(reading))){ //pipe_read ritorna 0 o 1 se ha successo, dunque se la pipe è vuota da zero
 			if(reading.valid){
 				num_readings++;
-				sum_temperature += reading.temperature_C;
+				sum_temperature += reading.temperature_c;
 				sum_pressure += reading.pressure_pa;
 			}
 		}
@@ -48,9 +48,9 @@ void* asi_met_task(void* arg){
 		// 2a. TODO: Compute the mean of the sensor readings and send them as telemetry, only if at least one reading was received
 		// SUGGESTION: use the tlm_pack_asi_met function (telemetry.h) to pack the telemetry packet
 		if (num_readings > 0){
-			mean.temperature_C = sum_temperature / num_readings;
+			mean.temperature_c = sum_temperature / num_readings;
 			mean.pressure_pa = sum_pressure / num_readings;
-			tlm_pack_asi_met(&packet, &mean)
+			tlm_pack_asi_met(&packet, &mean);
 		// 2b. TODO: send the telemetry packet over the telemetry queue
 			if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
 				perror("asi_met: Error sending telemetry packet");
