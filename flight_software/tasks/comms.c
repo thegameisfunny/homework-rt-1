@@ -14,12 +14,28 @@ void* comms_task(void* arg){
 	long int response_us;	
 
 	// TODO: Open the TX ready queue to receive tx-ready event
+	mqd_t tx_ready_qd;
+	if (tx_ready_qd = mq_open(RADIO_TX_READY_QUEUE, O_RDONLY) == (mqd_t)-1) {
+		perror("comms_task: mq_open (tx_ready)");
+		pthread_exit(NULL);
+	}
+	
 	struct radio_tx_ready_msg tx_ready;	
 
 	// TODO: Open the downlink queue for sending frames to the radio
+	mqd_t downlink_qd;
+	if (downlink_qd = mq_open(RADIO_DOWNLINK_QUEUE, O_WRONLY) == (mqd_t)-1) {
+		perror("comms_task: mq_open (downlink)");
+		pthread_exit(NULL);
+	}
 	struct downlink_frame frame;
 
 	// TODO: Open the telemetry queue for sending telemetry packets
+	mqd_t tlm_queue;
+	if (tlm_queue = mq_open(TLM_QUEUE, O_WRONLY) == (mqd_t)-1) {
+		perror("accelerometers: mq_open");
+		pthread_exit(NULL);
+	}
 	struct tlm_packet packet;
 	ssize_t received;
 
@@ -27,7 +43,7 @@ void* comms_task(void* arg){
 
 		// 1. TODO: handle the next activation of the taskk
 		// SUGGESTION: Wait for the radio transmitter (i.e., the tx-ready event)
-
+		if(tx_ready
 		// 2. Save the release time of this activation
 		th->release = tx_ready.time;
 
