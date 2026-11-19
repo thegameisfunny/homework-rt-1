@@ -29,7 +29,7 @@ void* imp_task(void* arg){
 
 	// TODO: Open the telemetry queue for sending telemetry packets
 	mqd_t tlm_qd;
-	if ((tlm_qd = mq_open (TLM_QUEUE, O_WRONLY)) == -1) {
+	if ((tlm_qd = mq_open (TLM_QUEUE, O_WRONLY|O_NONBLOCK)) == -1) {
 		perror ("imp_task: mq_open (tlm)");
 		pthread_exit (NULL);
 		return NULL;
