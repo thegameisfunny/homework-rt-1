@@ -23,6 +23,7 @@ void* imp_task(void* arg){
 	if ((imp_ready_qd = mq_open (IMP_READY_QUEUE, O_RDONLY)) == -1) {
 		perror ("imp_task: mq_open (imp_ready)");
 		pthread_exit (NULL);
+		return NULL;
 	}
 	struct imp_ready_msg ready;
 
@@ -31,6 +32,7 @@ void* imp_task(void* arg){
 	if ((tlm_qd = mq_open (TLM_QUEUE, O_WRONLY)) == -1) {
 		perror ("imp_task: mq_open (tlm)");
 		pthread_exit (NULL);
+		return NULL;
 	}
 	struct tlm_packet packet;
 
@@ -59,4 +61,5 @@ void* imp_task(void* arg){
 			break;
 		}
 	}
+	return NULL;
 }
