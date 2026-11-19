@@ -42,6 +42,22 @@ static struct comms_str comms;
 static struct asi_met_str asi_met;
 static struct imp_str imp;
 
+int create_thread_rt(pthread_t *thread, pthread_attr_t *myattr, void *(*task)(void *), void *arg, int priority)
+{
+	struct sched_param myparam;
+	cpu_set_t rt_cpu;
+	int error;
+
+	myparam.sched_priority = priority;
+	pthread_attr_setschedparam(&myattr, &myparam);
+
+	CPU_ZERO(&rt_cpu);
+	CPU_SET(RT_CPU, &rt_cpu);
+	error = pthread_create(thread, &myattr, task, arg); //ritorna 0 se va tutto bene
+	if(!error)
+		pthread_setaffinity_np(*thread, sizeof(rt_cpu), &rt_cpu);
+	return error;
+}
 
 int main(void){
 
@@ -148,35 +164,35 @@ int main(void){
 	pthread_attr_setschedpolicy(&myattr, SCHED_FIFO);
 	pthread_attr_setinheritsched(&myattr, PTHREAD_EXPLICIT_SCHED);
 	//accelerometers
-	myparam.sched_priority = accelerometers.th.priority;
-	pthread_attr_setschedparam(&myattr, &myparam);
-	pthread_create(&accelerometers_thread, &myattr, accelerometers_task, &accelerometers);
-	pthread_setaffinity_np(accelerometers_thread, sizeof(cpu_set_t), &rt_cpu);
+	if(create_thread_rt(&accelerometers_thread, &myattr, accelerometers_task, &accelerometers, accelerometers.th.priority) != 0) {
+		fprintf(stderr, "Failed to create accelerometers thread\n");
+		return 1;
+	}
 	//altimeter
-	myparam.sched_priority = altimeter.th.priority;
-	pthread_attr_setschedparam(&myattr, &myparam);
-	pthread_create(&altimeter_thread, &myattr, altimeter_task, &altimeter);
-	pthread_setaffinity_np(altimeter_thread, sizeof(cpu_set_t), &rt_cpu);
+	if(create_thread_rt(&altimeter_thread, &myattr, altimeter_task, &altimeter, altimeter.th.priority) != 0) {
+		fprintf(stderr, "Failed to create altimeter thread\n");
+		return 1;
+	}
 	//asi_met
-	myparam.sched_priority = asi_met.th.priority;
-	pthread_attr_setschedparam(&myattr, &myparam);
-	pthread_create(&asi_met_thread, &myattr, asi_met_task, &asi_met);
-	pthread_setaffinity_np(asi_met_thread, sizeof(cpu_set_t), &rt_cpu);
+	if(create_thread_rt(&asi_met_thread, &myattr, asi_met_task, &asi_met, asi_met.th.priority) != 0) {
+		fprintf(stderr, "Failed to create asi_met thread\n");
+		return 1;
+	}
 	//bus_scheduler
-	myparam.sched_priority = bus_scheduler.th.priority;
-	pthread_attr_setschedparam(&myattr, &myparam);
-	pthread_create(&bus_scheduler_thread, &myattr, bus_scheduler_task, &bus_scheduler);
-	pthread_setaffinity_np(bus_scheduler_thread, sizeof(cpu_set_t), &rt_cpu);
+	if(create_thread_rt(&bus_scheduler_thread, &myattr, bus_scheduler_task, &bus_scheduler, bus_scheduler.th.priority) != 0) {
+		fprintf(stderr, "Failed to create bus_scheduler thread\n");
+		return 1;
+	}
 	//comms
-	myparam.sched_priority = comms.th.priority;
-	pthread_attr_setschedparam(&myattr, &myparam);
-	pthread_create(&comms_thread, &myattr, comms_task, &comms);
-	pthread_setaffinity_np(comms_thread, sizeof(cpu_set_t), &rt_cpu);
+	if(create_thread_rt(&comms_thread, &myattr, comms_task, &comms, comms.th.priority) != 0) {
+		fprintf(stderr, "Failed to create comms thread\n");
+		return 1;
+	}
 	//distribution
-	myparam.sched_priority = distribution.th.priority;
-	pthread_attr_setschedparam(&myattr, &myparam);
-	pthread_create(&distribution_thread, &myattr, distribution_task, &distribution);
-	pthread_setaffinity_np(distribution_thread, sizeof(cpu_set_t), &rt_cpu);
+	if(create_thread_rt(&distribution_thread, &myattr, distribution_task, &distribution, distribution.th.priority) != 0) {
+		fprintf(stderr, "Failed to create distribution thread\n");
+		return 1;
+	}
 
 	pthread_attr_destroy(&myattr);
 
