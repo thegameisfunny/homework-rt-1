@@ -36,8 +36,24 @@ void* imp_task(void* arg){
 	}
 	struct tlm_packet packet;
 
-	while (1) {
+	mqd_t polling_queue;
+	if ((polling_queue = mq_open (POLLING_QUEUE, O_WRONLY|O_NONBLOCK)) == -1) {
+		perror ("imp_task: mq_open (polling)");
+		pthread_exit (NULL);
+		return NULL;
+	}
 
+	mqd_t activation_queue;
+	if ((activation_queue = mq_open (ACTIVATION_QUEUE, O_RDONLY)) == -1) {
+		perror ("imp_task: mq_open (activation)");
+		pthread_exit (NULL);
+		return NULL;
+	}
+
+
+	while (1) {
+		mq_send(polling_queue, true, sizeof(bool), 0);//manda la richiesta di polling al polling server
+		mq_receive(activation_queue, (char *)&ready, sizeof(bool), 0);//attende l'attivazione dal polling server
 		// 1. TODO: Ask the camera to take an image
 		// SUGGESTION: Look at the functions available in the rtos/drivers/imp/imp.h file
 		imp_take_image();

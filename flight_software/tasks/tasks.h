@@ -47,12 +47,17 @@ struct imp_str {
 	unsigned int images;	// Image counter
 };
 
+struct pollingserver_str {
+	struct periodic_thread th;
+};
+
 void* bus_scheduler_task(void* arg);		
 void* distribution_task(void* arg);		
 void* accelerometers_task(void* arg);		
 void* altimeter_task(void* arg);			
 void* comms_task(void* arg);				
 void* asi_met_task(void* arg);			
-void* imp_task(void* arg);				
+void* imp_task(void* arg);
+void* pollingserver_task(void* arg);				
 
 #endif

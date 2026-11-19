@@ -142,6 +142,28 @@ int main(void){
 		fprintf(stderr, "mq_open (telemetry)\n");
 		return 1;
 	}
+
+	//4b Create the polling queue
+	struct mq_attr polling_attr;
+	polling_attr.mq_flags = 0;
+	polling_attr.mq_maxmsg = 10;
+	polling_attr.mq_msgsize = sizeof(bool);
+	polling_attr.mq_curmsgs = 0;
+
+	mq_unlink(POLLING_QUEUE);
+	mq_unlink(ACTIVATION_QUEUE);
+
+	mqd_t polling_queue = mq_open(POLLING_QUEUE, O_RDWR|O_CREAT|O_NONBLOCK, 0660, &polling_attr);
+	if (polling_queue == (mqd_t)-1) {
+		fprintf(stderr, "mq_open (polling)\n");
+		return 1;
+	}
+	mqd_t activation_queue = mq_open(ACTIVATION_QUEUE, O_RDWR|O_CREAT|O_NONBLOCK, 0660, &polling_attr);
+	if (activation_queue == (mqd_t)-1) {
+		fprintf(stderr, "mq_open (activation)\n");
+		return 1;
+	}
+
 	
 	// 5. TODO: Create the tasks objects (pthread_t)
 	pthread_t accelerometers_thread;
@@ -237,6 +259,12 @@ int main(void){
 	// 12. TODO: Clean up the telemetry queue
 	mq_close(tlm_queue);
 	mq_unlink(TLM_QUEUE);
+
+	//12b. Clean up the polling queue
+	mq_close(polling_queue);
+	mq_unlink(POLLING_QUEUE);
+	mq_close(activation_queue);
+	mq_unlink(ACTIVATION_QUEUE);
 
 	// 13. TODO: Destroy the mutexes
 	pthread_mutex_destroy(&accelerometers_memory.lock);

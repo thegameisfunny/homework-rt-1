@@ -38,4 +38,7 @@ struct cycle_check_str {
 #define TLM_QUEUE  "/tlm_queue"
 #define TLM_MAX    64			
 
+#define POLLING_QUEUE "/polling_queue"
+#define ACTIVATION_QUEUE "/activation_queue"
+
 #endif
