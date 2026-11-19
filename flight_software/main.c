@@ -7,7 +7,8 @@
 #include <sys/mman.h>
 #include "system.h"
 #include "telemetry.h"	
-#include "tasks/tasks.h"	
+#include "tasks/tasks.h"
+#include <stdbool.h>			
 
 
 /***************************** Shared Data Initialization ********************************/
@@ -41,6 +42,7 @@ static struct altimeter_str altimeter;
 static struct comms_str comms;
 static struct asi_met_str asi_met;
 static struct imp_str imp;
+static struct pollingserver_str pollingserver;
 
 int create_thread_rt(pthread_t *thread, pthread_attr_t *myattr, void *(*task)(void *), void *arg, int priority)
 {
@@ -111,12 +113,15 @@ int main(void){
 	asi_met.th.priority = ASI_MET_PRIORITY;
 
 	// g. IMP: not real-time, va implementato con polling server (task periodico che serve la richiesta)
-	imp.th.index    = IMP_SERVER_ID;
-	imp.th.period   = IMP_SERVER_PERIOD;
-	imp.th.wcet     = IMP_SERVER_CAPACITY;
-	imp.th.deadline = IMP_SERVER_DEADLINE;
-	imp.th.priority = IMP_SERVER_PRIORITY;	//lo trattiamo come un thread periodico, quindi ha una priorità di deadline monotonic che andiamo a implementare in schedule.h
 	imp.images = 0;
+	imp.th.priority = IMP_PRIORITY;
+
+	//h polling task 
+	pollingserver.th.index    = POLLING_SERVER_ID;
+	pollingserver.th.period   = POLLING_SERVER_PERIOD;
+	pollingserver.th.wcet     = POLLING_SERVER_CAPACITY;
+	pollingserver.th.deadline = POLLING_SERVER_DEADLINE;
+	pollingserver.th.priority = POLLING_SERVER_PRIORITY;
 
 	// 2. TODO: Lock all current and future memory allocations of the program in RAM
 	mlockall(MCL_CURRENT | MCL_FUTURE);//i flag MCL_CURRENT e MCL_FUTURE sono stati visti dalla funzione del manuale man 2 mlockall
@@ -173,6 +178,7 @@ int main(void){
 	pthread_t comms_thread;
 	pthread_t distribution_thread;
 	pthread_t imp_thread;
+	pthread_t pollingserver_thread;
 
 	// 6. TODO: Initialize the mutexes (shared_resources.h locks)
 	pthread_mutexattr_t mutexattr;
@@ -218,13 +224,20 @@ int main(void){
 		fprintf(stderr, "Failed to create distribution thread\n");
 		return 1;
 	}
-	pthread_attr_destroy(&myattr);
+	//pollingserver
+	if(create_thread_rt(&pollingserver_thread, &myattr, pollingserver_task, &pollingserver, pollingserver.th.priority) != 0) {
+		fprintf(stderr, "Failed to create pollingserver thread\n");
+		return 1;
+	}
 
 	// 8. TODO: Configure and create the OPTIONAL IMP task (not real-time)
-	if(create_thread_rt(&imp_thread, &myattr, imp_task, &imp, imp.th.priority) != 0) {
+	pthread_attr_setschedpolicy(&myattr, SCHED_OTHER);
+	if(pthread_create(&imp_thread, &myattr, imp_task, &imp) != 0) {
 		fprintf(stderr, "Failed to create imp server thread\n");
 		return 1;
 	}
+
+	pthread_attr_destroy(&myattr);
 
 	// 9. Wait for the user to quit the program
 	printf("Mars Pathfinder. Ground station: run  make ground  in another terminal\n\n");
@@ -242,6 +255,8 @@ int main(void){
 	pthread_cancel(comms_thread);
 	pthread_cancel(distribution_thread);
 
+	pthread_cancel(pollingserver_thread);
+
 	pthread_cancel(imp_thread);
 
 	pthread_join(accelerometers_thread, NULL);
@@ -250,6 +265,8 @@ int main(void){
 	pthread_join(bus_scheduler_thread, NULL);
 	pthread_join(comms_thread, NULL);
 	pthread_join(distribution_thread, NULL);
+
+	pthread_join(pollingserver_thread, NULL);
 
 	pthread_join(imp_thread, NULL);
 

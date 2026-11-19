@@ -61,4 +61,6 @@
 #define POLLING_SERVER_DEADLINE        	5000000 // 5 s così da avere priorità più bassa tra i task RT (D = 1000 ms)
 #define POLLING_SERVER_PRIORITY        	30
 
+#define IMP_PRIORITY 30
+
 #endif

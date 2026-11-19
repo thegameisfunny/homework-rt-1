@@ -4,7 +4,8 @@
 #include "workload.h"		
 #include "telemetry.h"		
 #include "imp.h"
-#include "tasks.h"			
+#include "tasks.h"
+#include <stdbool.h>			
 
 #define IMP_COMPRESSION_TIME  2000000		
 
@@ -36,6 +37,8 @@ void* imp_task(void* arg){
 	}
 	struct tlm_packet packet;
 
+	bool request = true;
+
 	mqd_t polling_queue;
 	if ((polling_queue = mq_open (POLLING_QUEUE, O_WRONLY|O_NONBLOCK)) == -1) {
 		perror ("imp_task: mq_open (polling)");
@@ -52,8 +55,8 @@ void* imp_task(void* arg){
 
 
 	while (1) {
-		mq_send(polling_queue, true, sizeof(bool), 0);//manda la richiesta di polling al polling server
-		mq_receive(activation_queue, (char *)&ready, sizeof(bool), 0);//attende l'attivazione dal polling server
+		mq_send(polling_queue, ( const char *)&request, sizeof(bool), 0);//manda la richiesta di polling al polling server
+		mq_receive(activation_queue, (char *)&request, sizeof(bool), 0);//attende l'attivazione dal polling server
 		// 1. TODO: Ask the camera to take an image
 		// SUGGESTION: Look at the functions available in the rtos/drivers/imp/imp.h file
 		imp_take_image();

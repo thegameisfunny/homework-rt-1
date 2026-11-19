@@ -5,7 +5,9 @@
 #include "timing.h"		
 #include "workload.h"		
 #include "telemetry.h"		
-#include "tasks.h"			
+#include "tasks.h"		
+#include <stdbool.h>			
+
 
 void* pollingserver_task(void* arg){
 
