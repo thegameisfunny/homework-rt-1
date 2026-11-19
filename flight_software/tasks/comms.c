@@ -32,7 +32,7 @@ void* comms_task(void* arg){
 
 	// TODO: Open the telemetry queue for sending telemetry packets (IMHO: I think this should be opened also to receive)
 	mqd_t tlm_queue;
-	if ((tlm_queue = mq_open(TLM_QUEUE, O_WRONLY)) == (mqd_t)-1) {
+	if ((tlm_queue = mq_open(TLM_QUEUE, O_RDWR|O_NONBLOCK)) == (mqd_t)-1) {
 		perror("comms_task: mq_open");
 		pthread_exit(NULL);
 	}
@@ -53,11 +53,10 @@ void* comms_task(void* arg){
 		// 4. TODO: Move the telemetry packets waiting in the queue into the downlink frame, until the queue is empty
 		// SUGGESTION: Use mq_receive to get telemetry packets from the telemetry queue
 		// SUGGESTION: Use frame_add(&frame, &packet, sizeof(packet)); to add the telemetry packet to the frame
-		mqd_t tlm_qr = mq_open(TLM_QUEUE, O_RDONLY|O_NONBLOCK); //Riapro la coda in lettura per poter leggere i valori
-		while((received = mq_receive(tlm_qr, (char *)&packet, sizeof(packet), 0))>=0){
+		
+		while((received = mq_receive(tlm_queue, (char *)&packet, sizeof(packet), 0))>=0){
 			frame_add(&frame, &packet, sizeof(packet));
 		}
-		mq_close(tlm_qr);//chiudo la coda quando finisco di leggere
 		// 5. Simulate the computation of the frame encoding
 		compute(th->wcet);
 

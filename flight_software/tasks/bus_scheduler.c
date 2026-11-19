@@ -41,12 +41,12 @@ void* bus_scheduler_task(void* arg){
 		wait_next_activation(th);
 		// 1. TODO: Check the distribution done flag and clear it
 		pthread_mutex_lock(&cycle_check->lock);
-		distribution_done = &cycle_check->distribution_done;
+		distribution_done = cycle_check->distribution_done;
 		cycle_check->distribution_done = false;
 		pthread_mutex_unlock(&cycle_check->lock);
 		// 2. TODO: If the distribution flag was not set, reset the system
 		// SUGGESTION: look at the rtos/system/system.h file for the system_reset function
-		if (!distribution_done){
+		if (!distribution_done) {
 			system_reset(cycle_cnt);
 		}
 		// 3. Simulate computation
@@ -61,7 +61,7 @@ void* bus_scheduler_task(void* arg){
 		response_us = response_time_us(th);
 		if (response_us > th->deadline) {
 			tlm_pack_deadline(&packet, th->index, response_us, th->deadline);
-			if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
+			if (mq_send(tlm_queue, (const char *)&packet, sizeof(packet), 0)==-1){
 				perror("bus_scheduler: Error sending telemetry packet");
 				break;
 			}

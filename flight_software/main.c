@@ -113,7 +113,7 @@ int main(void){
 	tlm_attr.mq_msgsize = sizeof(struct tlm_packet);
 	tlm_attr.mq_curmsgs = 0;
 
-	mqd_t tlm_queue = mq_open(TLM_QUEUE, O_CREAT, 0660, &tlm_attr);
+	mqd_t tlm_queue = mq_open(TLM_QUEUE, O_RDWR|O_CREAT, 0660, &tlm_attr);
 	if (tlm_queue == (mqd_t)-1) {
 		fprintf(stderr, "mq_open (telemetry)\n");
 		return 1;
