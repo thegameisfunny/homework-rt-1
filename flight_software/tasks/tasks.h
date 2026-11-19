@@ -43,6 +43,7 @@ struct asi_met_str {
 };
 
 struct imp_str {
+	struct periodic_thread th;
 	unsigned int images;	// Image counter
 };
 

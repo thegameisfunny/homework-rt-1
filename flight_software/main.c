@@ -49,15 +49,16 @@ int create_thread_rt(pthread_t *thread, pthread_attr_t *myattr, void *(*task)(vo
 	int error;
 
 	myparam.sched_priority = priority;
-	pthread_attr_setschedparam(&myattr, &myparam);
+	pthread_attr_setschedparam(myattr, &myparam);
 
 	CPU_ZERO(&rt_cpu);
 	CPU_SET(RT_CPU, &rt_cpu);
-	error = pthread_create(thread, &myattr, task, arg); //ritorna 0 se va tutto bene
+	error = pthread_create(thread, myattr, task, arg); //ritorna 0 se va tutto bene
 	if(!error)
 		pthread_setaffinity_np(*thread, sizeof(rt_cpu), &rt_cpu);
 	return error;
 }
+
 
 int main(void){
 
@@ -109,7 +110,12 @@ int main(void){
 	asi_met.th.deadline = ASI_MET_DEADLINE;
 	asi_met.th.priority = ASI_MET_PRIORITY;
 
-	// g. IMP: not real-time
+	// g. IMP: not real-time, va implementato con polling server (task periodico che serve la richiesta)
+	imp.th.index    = IMP_SERVER_ID;
+	imp.th.period   = IMP_SERVER_PERIOD;
+	imp.th.wcet     = IMP_SERVER_CAPACITY;
+	imp.th.deadline = IMP_SERVER_DEADLINE;
+	imp.th.priority = IMP_SERVER_PRIORITY;	//lo trattiamo come un thread periodico, quindi ha una priorità di deadline monotonic che andiamo a implementare in schedule.h
 	imp.images = 0;
 
 	// 2. TODO: Lock all current and future memory allocations of the program in RAM
@@ -129,7 +135,9 @@ int main(void){
 	tlm_attr.mq_msgsize = sizeof(struct tlm_packet);
 	tlm_attr.mq_curmsgs = 0;
 
-	mqd_t tlm_queue = mq_open(TLM_QUEUE, O_RDWR|O_CREAT, 0660, &tlm_attr);
+	mq_unlink(TLM_QUEUE);//svuota la coda di messaggi se esiste già, in modo da poterla ricreare
+
+	mqd_t tlm_queue = mq_open(TLM_QUEUE, O_RDWR|O_CREAT|O_NONBLOCK, 0660, &tlm_attr);
 	if (tlm_queue == (mqd_t)-1) {
 		fprintf(stderr, "mq_open (telemetry)\n");
 		return 1;
@@ -142,6 +150,7 @@ int main(void){
 	pthread_t bus_scheduler_thread;
 	pthread_t comms_thread;
 	pthread_t distribution_thread;
+	pthread_t imp_thread;
 
 	// 6. TODO: Initialize the mutexes (shared_resources.h locks)
 	pthread_mutexattr_t mutexattr;
@@ -153,13 +162,7 @@ int main(void){
 	pthread_mutexattr_destroy(&mutexattr);
 
 	// 7. TODO: Configure and initialize the real-time threads (CPU pinning included)
-	struct sched_param myparam;
 	pthread_attr_t myattr;
-
-	cpu_set_t rt_cpu;
-	CPU_ZERO(&rt_cpu);
-	CPU_SET(RT_CPU, &rt_cpu);
-
 	pthread_attr_init(&myattr);
 	pthread_attr_setschedpolicy(&myattr, SCHED_FIFO);
 	pthread_attr_setinheritsched(&myattr, PTHREAD_EXPLICIT_SCHED);
@@ -193,10 +196,13 @@ int main(void){
 		fprintf(stderr, "Failed to create distribution thread\n");
 		return 1;
 	}
-
 	pthread_attr_destroy(&myattr);
 
 	// 8. TODO: Configure and create the OPTIONAL IMP task (not real-time)
+	if(create_thread_rt(&imp_thread, &myattr, imp_task, &imp, imp.th.priority) != 0) {
+		fprintf(stderr, "Failed to create imp server thread\n");
+		return 1;
+	}
 
 	// 9. Wait for the user to quit the program
 	printf("Mars Pathfinder. Ground station: run  make ground  in another terminal\n\n");
@@ -214,12 +220,16 @@ int main(void){
 	pthread_cancel(comms_thread);
 	pthread_cancel(distribution_thread);
 
+	pthread_cancel(imp_thread);
+
 	pthread_join(accelerometers_thread, NULL);
 	pthread_join(altimeter_thread, NULL);
 	pthread_join(asi_met_thread, NULL);
 	pthread_join(bus_scheduler_thread, NULL);
 	pthread_join(comms_thread, NULL);
 	pthread_join(distribution_thread, NULL);
+
+	pthread_join(imp_thread, NULL);
 
 	// 11. Stop the system
 	system_stop();
@@ -232,6 +242,8 @@ int main(void){
 	pthread_mutex_destroy(&accelerometers_memory.lock);
 	pthread_mutex_destroy(&altimeter_memory.lock);
 	pthread_mutex_destroy(&cycle_check.lock);
+
+	munlockall();
 
 	return 0;
 }

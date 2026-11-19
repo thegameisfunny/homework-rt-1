@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <fcntl.h>
 #include <mqueue.h>
 #include <pthread.h>
@@ -17,7 +18,7 @@ void* accelerometers_task(void* arg){
 
 	// TODO: Open the telemetry queue for sending telemetry packets
 	mqd_t tlm_queue;
-	if ((tlm_queue = mq_open(TLM_QUEUE, O_WRONLY)) == (mqd_t)-1) {
+	if ((tlm_queue = mq_open(TLM_QUEUE, O_WRONLY | O_NONBLOCK)) == (mqd_t)-1) {
 		perror("accelerometers: mq_open");
 		pthread_exit(NULL);
 	}
@@ -46,10 +47,8 @@ void* accelerometers_task(void* arg){
 		tlm_pack_accelerometers(&packet, &reading);
 		
 		// 3b. TODO: send the telemetry packet over the telemetry queue
-		if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
-			perror("accelerometers: Error sending telemetry packet");
-			break;
-		}
+		if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0) == -1 && errno != EAGAIN)
+			perror("accelerometers: Error sending telemetry packet");	// queue full: the packet is dropped, the task goes on
 		
 		// 4. TODO: Check if the deadline was missed and, if so, send the report over the telemetry queue
 		// SUGGESTION: Use response_time_us(th) to get the response time 
@@ -57,10 +56,8 @@ void* accelerometers_task(void* arg){
 		response_us = response_time_us(th);
 		if (response_us > th->deadline) {
 			tlm_pack_deadline(&packet, th->index, response_us, th->deadline);
-			if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
-				perror("accelerometers: Error sending telemetry packet");
-				break;
-			}
+			if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0) == -1 && errno != EAGAIN)
+			perror("accelerometers: Error sending telemetry packet");	// queue full: the packet is dropped, the task goes on
 		}
 	}
 }

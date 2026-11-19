@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <fcntl.h>
 #include <mqueue.h>
 #include <pthread.h>
@@ -17,7 +18,7 @@ void* altimeter_task(void* arg){
 
 	// TODO: Open the telemetry queue for sending telemetry packets
 	mqd_t tlm_queue;
-	if ((tlm_queue = mq_open(TLM_QUEUE, O_WRONLY)) == (mqd_t)-1) {
+	if ((tlm_queue = mq_open(TLM_QUEUE, O_WRONLY | O_NONBLOCK)) == (mqd_t)-1) {
 		perror("altimeter: mq_open");
 		pthread_exit(NULL);
 	}
@@ -41,20 +42,16 @@ void* altimeter_task(void* arg){
 		// SUGGESTION: use the tlm_pack_altimeter function (telemetry.h) to pack the telemetry message
 		tlm_pack_altimeter(&packet, &reading);
 		// 3b. TODO: send the telemetry packet over the telemetry queue
-		if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
-			perror("Error sending telemetry packet");
-			break;
-		}
+		if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0) == -1 && errno != EAGAIN)
+			perror("Error sending telemetry packet");	// queue full: the packet is dropped, the task goes on
 		// 4. TODO: Check if the deadline was missed and, if so, send the report over the telemetry queue
 		// SUGGESTION: Use response_time_us(th) to get the response time 
 		// SUGGESTION: Use the tlm_pack_deadline function (telemetry.h) to pack the deadline miss telemetry packet
 		response_us = response_time_us(th);
 		if (response_us > th->deadline) {
 			tlm_pack_deadline(&packet, th->index, response_us, th->deadline);
-			if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
-				perror("Altimeter: Error sending telemetry packet");
-				break;
-			}
+			if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0) == -1 && errno != EAGAIN)
+			perror("Altimeter: Error sending telemetry packet");	// queue full: the packet is dropped, the task goes on
 		}
 	}
 }
