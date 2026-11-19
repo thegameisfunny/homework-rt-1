@@ -58,8 +58,18 @@ void* comms_task(void* arg){
 		// SUGGESTION: Use mq_receive to get telemetry packets from the telemetry queue
 		// SUGGESTION: Use frame_add(&frame, &packet, sizeof(packet)); to add the telemetry packet to the frame
 		
-		while((received = mq_receive(tlm_queue, (char *)&packet, sizeof(packet), 0))>0){
-			frame_add(&frame, &packet, sizeof(packet));
+		while(1){
+			received = mq_receive(tlm_queue, (char *)&packet, sizeof(packet), 0);
+			if(received > 0){
+				frame_add(&frame, &packet, sizeof(packet));
+			}
+			else if(errno == EAGAIN){
+				break; // queue empty, keep going
+			}
+			else{
+				perror("comms: Error receiving telemetry packet");
+				break;
+			}
 		}
 		// 5. Simulate the computation of the frame encoding
 		compute(th->wcet);
