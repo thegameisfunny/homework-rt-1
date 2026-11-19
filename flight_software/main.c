@@ -115,6 +115,10 @@ int main(void){
 	// g. IMP: not real-time, va implementato con polling server (task periodico che serve la richiesta)
 	imp.images = 0;
 	imp.th.priority = IMP_PRIORITY;
+	imp.th.index = IMP_ID;
+	imp.th.wcet = IMP_WCET;
+	//imp.th.period = IMP_PERIOD;
+	//imp.th.deadline = 0;
 
 	//h polling task 
 	pollingserver.th.index    = POLLING_SERVER_ID;
@@ -122,6 +126,7 @@ int main(void){
 	pollingserver.th.wcet     = POLLING_SERVER_CAPACITY;
 	pollingserver.th.deadline = POLLING_SERVER_DEADLINE;
 	pollingserver.th.priority = POLLING_SERVER_PRIORITY;
+
 
 	// 2. TODO: Lock all current and future memory allocations of the program in RAM
 	mlockall(MCL_CURRENT | MCL_FUTURE);//i flag MCL_CURRENT e MCL_FUTURE sono stati visti dalla funzione del manuale man 2 mlockall

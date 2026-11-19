@@ -61,6 +61,11 @@
 #define POLLING_SERVER_DEADLINE        	5000000 // 5 s così da avere priorità più bassa tra i task RT (D = 1000 ms)
 #define POLLING_SERVER_PRIORITY        	30
 
+
+#define IMP_ID                  7
+#define IMP_PERIOD              0       // non è un task periodico, quindi non ha periodo   
 #define IMP_PRIORITY 30
+#define IMP_WCET 2000000
+
 
 #endif
