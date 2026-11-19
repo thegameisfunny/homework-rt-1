@@ -6,7 +6,7 @@ LDLIBS = -lpthread -lrt -lm
 
 FLIGHT   = flight_software/main.c flight_software/telemetry/telemetry.c flight_software/tasks/bus_scheduler.c flight_software/tasks/distribution.c \
            flight_software/tasks/accelerometers.c flight_software/tasks/altimeter.c flight_software/tasks/comms.c \
-           flight_software/tasks/asi_met.c flight_software/tasks/imp.c
+           flight_software/tasks/asi_met.c flight_software/tasks/imp.c flight_software/tasks/pollingserver.c 
 RTOS     = rtos/system/system.c rtos/services/timing/timing.c rtos/services/pipe/pipe.c rtos/drivers/bus_1553/bus_1553.c rtos/drivers/radio/radio.c rtos/drivers/imp/imp.c
 WORKLOAD = simulation/workload/workload.c
 VEHICLE  = simulation/vehicle/bus_card.c simulation/vehicle/devices.c simulation/vehicle/transponder.c simulation/vehicle/imp_card.c simulation/vehicle/eeprom.c \
