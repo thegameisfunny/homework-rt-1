@@ -49,11 +49,11 @@ int create_thread_rt(pthread_t *thread, pthread_attr_t *myattr, void *(*task)(vo
 	int error;
 
 	myparam.sched_priority = priority;
-	pthread_attr_setschedparam(&myattr, &myparam);
+	pthread_attr_setschedparam(myattr, &myparam);
 
 	CPU_ZERO(&rt_cpu);
 	CPU_SET(RT_CPU, &rt_cpu);
-	error = pthread_create(thread, &myattr, task, arg); //ritorna 0 se va tutto bene
+	error = pthread_create(thread, myattr, task, arg); //ritorna 0 se va tutto bene
 	if(!error)
 		pthread_setaffinity_np(*thread, sizeof(rt_cpu), &rt_cpu);
 	return error;
@@ -150,6 +150,7 @@ int main(void){
 	pthread_t bus_scheduler_thread;
 	pthread_t comms_thread;
 	pthread_t distribution_thread;
+	pthread_t imp_thread;
 
 	// 6. TODO: Initialize the mutexes (shared_resources.h locks)
 	pthread_mutexattr_t mutexattr;
@@ -161,11 +162,7 @@ int main(void){
 	pthread_mutexattr_destroy(&mutexattr);
 
 	// 7. TODO: Configure and initialize the real-time threads (CPU pinning included)
-	struct sched_param myparam;
 	pthread_attr_t myattr;
-
-	
-
 	pthread_attr_init(&myattr);
 	pthread_attr_setschedpolicy(&myattr, SCHED_FIFO);
 	pthread_attr_setinheritsched(&myattr, PTHREAD_EXPLICIT_SCHED);
