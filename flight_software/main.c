@@ -237,7 +237,7 @@ int main(void){
 
 	// 8. TODO: Configure and create the OPTIONAL IMP task (not real-time)
 	pthread_attr_setschedpolicy(&myattr, SCHED_OTHER);
-	if(pthread_create(&imp_thread, &myattr, imp_task, &imp) != 0) {
+	if(create_thread_rt(&imp_thread, &myattr, imp_task, &imp, imp.th.priority) != 0) {
 		fprintf(stderr, "Failed to create imp server thread\n");
 		return 1;
 	}
