@@ -57,7 +57,7 @@
 #define IMP_SERVER_ID              	6
 #define IMP_SERVER_PERIOD           1000000 // 1 s come la deadline
 #define IMP_SERVER_OFFSET  	        0       //non è un task periodico, quindi non ha offset
-#define IMP_SERVER_CAPACITY        	200000  // 200 ms in modo che ho un uso del 20% della CPU per il polling server
+#define IMP_SERVER_CAPACITY        	100000  // 100 ms in modo che ho un uso del 10% della CPU per il task
 #define IMP_SERVER_DEADLINE        	1000000 // 1 s così da avere priorità più bassa tra i task RT (D = 1000 ms)
 #define IMP_SERVER_PRIORITY        	30
 
