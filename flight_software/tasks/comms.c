@@ -19,6 +19,7 @@ void* comms_task(void* arg){
 	if ((tx_ready_qd = mq_open(RADIO_TX_READY_QUEUE, O_RDONLY)) == (mqd_t)-1) {
 		perror("comms_task: mq_open (tx_ready)");
 		pthread_exit(NULL);
+		return NULL;
 	}
 	
 	struct radio_tx_ready_msg tx_ready;	
@@ -28,6 +29,7 @@ void* comms_task(void* arg){
 	if ((downlink_qd = mq_open(RADIO_DOWNLINK_QUEUE, O_WRONLY)) == (mqd_t)-1) {
 		perror("comms_task: mq_open (downlink)");
 		pthread_exit(NULL);
+		return NULL;
 	}
 	struct downlink_frame frame;
 
@@ -36,6 +38,7 @@ void* comms_task(void* arg){
 	if ((tlm_queue = mq_open(TLM_QUEUE, O_RDWR|O_NONBLOCK)) == (mqd_t)-1) {
 		perror("comms_task: mq_open");
 		pthread_exit(NULL);
+		return NULL;
 	}
 	struct tlm_packet packet;
 	ssize_t received;
@@ -76,4 +79,5 @@ void* comms_task(void* arg){
 			perror("comms: Error sending telemetry packet");	// queue full: the packet is dropped, the task goes on
 		}
 	}
+	return NULL;
 }
