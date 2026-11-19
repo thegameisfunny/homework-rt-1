@@ -139,6 +139,11 @@ int main(void){
 	// 7. TODO: Configure and initialize the real-time threads (CPU pinning included)
 	struct sched_param myparam;
 	pthread_attr_t myattr;
+
+	cpu_set_t rt_cpu;
+	CPU_ZERO(&rt_cpu);
+	CPU_SET(RT_CPU, &rt_cpu);
+
 	pthread_attr_init(&myattr);
 	pthread_attr_setschedpolicy(&myattr, SCHED_FIFO);
 	pthread_attr_setinheritsched(&myattr, PTHREAD_EXPLICIT_SCHED);
@@ -146,32 +151,32 @@ int main(void){
 	myparam.sched_priority = accelerometers.th.priority;
 	pthread_attr_setschedparam(&myattr, &myparam);
 	pthread_create(&accelerometers_thread, &myattr, accelerometers_task, &accelerometers);
-	pthread_setaffinity_np(accelerometers_thread, sizeof(cpu_set_t), RT_CPU);
+	pthread_setaffinity_np(accelerometers_thread, sizeof(cpu_set_t), &rt_cpu);
 	//altimeter
 	myparam.sched_priority = altimeter.th.priority;
 	pthread_attr_setschedparam(&myattr, &myparam);
 	pthread_create(&altimeter_thread, &myattr, altimeter_task, &altimeter);
-	pthread_setaffinity_np(altimeter_thread, sizeof(cpu_set_t), RT_CPU);
+	pthread_setaffinity_np(altimeter_thread, sizeof(cpu_set_t), &rt_cpu);
 	//asi_met
 	myparam.sched_priority = asi_met.th.priority;
 	pthread_attr_setschedparam(&myattr, &myparam);
 	pthread_create(&asi_met_thread, &myattr, asi_met_task, &asi_met);
-	pthread_setaffinity_np(asi_met_thread, sizeof(cpu_set_t), RT_CPU);
+	pthread_setaffinity_np(asi_met_thread, sizeof(cpu_set_t), &rt_cpu);
 	//bus_scheduler
 	myparam.sched_priority = bus_scheduler.th.priority;
 	pthread_attr_setschedparam(&myattr, &myparam);
 	pthread_create(&bus_scheduler_thread, &myattr, bus_scheduler_task, &bus_scheduler);
-	pthread_setaffinity_np(bus_scheduler_thread, sizeof(cpu_set_t), RT_CPU);
+	pthread_setaffinity_np(bus_scheduler_thread, sizeof(cpu_set_t), &rt_cpu);
 	//comms
 	myparam.sched_priority = comms.th.priority;
 	pthread_attr_setschedparam(&myattr, &myparam);
 	pthread_create(&comms_thread, &myattr, comms_task, &comms);
-	pthread_setaffinity_np(comms_thread, sizeof(cpu_set_t), RT_CPU);
+	pthread_setaffinity_np(comms_thread, sizeof(cpu_set_t), &rt_cpu);
 	//distribution
 	myparam.sched_priority = distribution.th.priority;
 	pthread_attr_setschedparam(&myattr, &myparam);
 	pthread_create(&distribution_thread, &myattr, distribution_task, &distribution);
-	pthread_setaffinity_np(distribution_thread, sizeof(cpu_set_t), RT_CPU);
+	pthread_setaffinity_np(distribution_thread, sizeof(cpu_set_t), &rt_cpu);
 
 	pthread_attr_destroy(&myattr);
 
