@@ -196,13 +196,14 @@ int main(void){
 		fprintf(stderr, "Failed to create distribution thread\n");
 		return 1;
 	}
-	pthread_attr_destroy(&myattr);
 
 	// 8. TODO: Configure and create the OPTIONAL IMP task (not real-time)
 	if(create_thread_rt(&imp_thread, &myattr, imp_task, &imp, imp.th.priority) != 0) {
 		fprintf(stderr, "Failed to create imp server thread\n");
 		return 1;
 	}
+	
+	pthread_attr_destroy(&myattr);
 
 	// 9. Wait for the user to quit the program
 	printf("Mars Pathfinder. Ground station: run  make ground  in another terminal\n\n");
