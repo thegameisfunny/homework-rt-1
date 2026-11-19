@@ -113,6 +113,9 @@ int main(void){
 	tlm_attr.mq_msgsize = sizeof(struct tlm_packet);
 	tlm_attr.mq_curmsgs = 0;
 
+	// The queue lives in the kernel and survives the reset (execv): remove the old one,
+	// otherwise the new run starts with the stale packets (possibly a full queue)
+	mq_unlink(TLM_QUEUE);
 	mqd_t tlm_queue = mq_open(TLM_QUEUE, O_RDWR|O_CREAT, 0660, &tlm_attr);
 	if (tlm_queue == (mqd_t)-1) {
 		fprintf(stderr, "mq_open (telemetry)\n");

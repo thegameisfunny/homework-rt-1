@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <fcntl.h>
 #include <mqueue.h>
 #include <pthread.h>
@@ -33,7 +34,7 @@ void* distribution_task(void* arg){
 
 	// TODO: Open the telemetry queue for sending telemetry packets
 	mqd_t tlm_queue;
-	if ((tlm_queue = mq_open(TLM_QUEUE, O_WRONLY)) == (mqd_t)-1) {
+	if ((tlm_queue = mq_open(TLM_QUEUE, O_WRONLY | O_NONBLOCK)) == (mqd_t)-1) {
 		perror("distribution: mq_open (telemetry)");
 		pthread_exit(NULL);
 	}
@@ -90,18 +91,14 @@ void* distribution_task(void* arg){
 		response_us = response_time_us(th);
 		if (response_us > th->deadline) {
 			tlm_pack_deadline(&packet, th->index, response_us, th->deadline);
-			if (mq_send(tlm_queue, (const char *)&packet, sizeof(packet), 0)==-1){
-				perror("Distribution: Error sending deadline miss telemetry packet");
-				break;
-			}
+			if (mq_send(tlm_queue, (const char *)&packet, sizeof(packet), 0) == -1 && errno != EAGAIN)
+			perror("Distribution: Error sending deadline miss telemetry packet");	// queue full: the packet is dropped, the task goes on
 		}
 		// 9. TODO: Report the response time of this activation as telemetry
 		// SUGGESTION: Use response_time_us(th) to get the response time 
 		// SUGGESTION: Use the tlm_pack_timing function (telemetry.h) to pack the timing telemetry packet
 		tlm_pack_timing(&packet, response_us, th->deadline);
-		if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
-			perror("Distribution: Error sending timing telemetry packet");
-			break;
-		}
+		if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0) == -1 && errno != EAGAIN)
+			perror("Distribution: Error sending timing telemetry packet");	// queue full: the packet is dropped, the task goes on
 	}
 }

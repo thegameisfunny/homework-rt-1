@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <fcntl.h>
 #include <mqueue.h>
 #include "timing.h"			
@@ -71,10 +72,8 @@ void* comms_task(void* arg){
 		response_us = response_time_us(th);
 		if (response_us > th->deadline) {
 			tlm_pack_deadline(&packet, th->index, response_us, th->deadline);
-			if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
-				perror("comms: Error sending telemetry packet");
-				break;
-			}
+			if (mq_send(tlm_queue, (const char *)&packet, sizeof(struct tlm_packet), 0) == -1 && errno != EAGAIN)
+			perror("comms: Error sending telemetry packet");	// queue full: the packet is dropped, the task goes on
 		}
 	}
 }
