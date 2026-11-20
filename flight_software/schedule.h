@@ -58,17 +58,16 @@
 #define POLLING_SERVER_PERIOD           1200000 // 1200 ms
 #define POLLING_SERVER_OFFSET  	        0
 #define POLLING_SERVER_CAPACITY        	300000  // 300 ms di CPU per periodo: U = 25%
-#define POLLING_SERVER_DEADLINE        	1200000 // D = T = 1200 ms: deadline piu' lunga -> priorita' piu' bassa (DM)
+#define POLLING_SERVER_DEADLINE        	1200000 // D = T = 1200 ms: deadline piu' lunga per aver priorita' piu' bassa (DM)
 #define POLLING_SERVER_PRIORITY        	30
 #define POLLING_SERVER_CHECK            5000    // ogni 5 ms il server controlla la capacita' consumata da IMP
-// Periodo e capacita' piccoli: il server non tiene mai la CPU per un secondo intero, cosi' il carico
-// real-time resta sotto il limite di RT throttling di Linux (sched_rt_runtime_us = 950 ms ogni 1 s)
+// Periodo e capacita' piccoli così il server non tiene mai la CPU per troppo tempo evitando il throttling visto a lezione nelle slide 09 sulle SCHED_DEADLINE ed evitiamo quindi comportamenti instabili, forse non è un problema (in test non mi dava noie), però meglio essere prudenti e non rischiare di avere un thread che monopolizza la CPU per troppo tempo, anche se il server ha priorità più bassa dei task RT e soprattutto possiamo gestire effettivamente il tempo del task imp.
 
 
 #define IMP_ID                  7
 #define IMP_PERIOD              0       // non è un task periodico, quindi non ha periodo   
 #define IMP_PRIORITY 0
-#define IMP_SERVED_PRIORITY     (POLLING_SERVER_PRIORITY - 1)  // priorita' di IMP mentre e' servito: sotto il server
+#define IMP_SERVED_PRIORITY     (POLLING_SERVER_PRIORITY - 1)  // priorita' di IMP mentre e' servito dal server
 #define IMP_WCET 2000000
 
 

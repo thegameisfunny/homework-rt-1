@@ -11,29 +11,25 @@
 #include "tasks.h"
 
 /*
- * Polling server per il task non real-time IMP.
- *
- * Il server e' un task periodico (POLLING_SERVER_PERIOD) con capacita' POLLING_SERVER_CAPACITY
- * (th->wcet), a priorita' POLLING_SERVER_PRIORITY assegnata con Deadline Monotonic.
- * Il lavoro aperiodico resta nel codice di IMP (imp.c): il server lo "serve" prestandogli la
- * propria priorita' e la propria capacita'.
- *
- * Ad ogni attivazione la capacita' viene ricaricata e il server controlla (polling) se IMP ha
- * una richiesta sulla POLLING_QUEUE:
- * - se non ci sono richieste, la capacita' del periodo va persa;
- * - se c'e' una richiesta, il server sblocca IMP (ACTIVATION_QUEUE) e lo porta a SCHED_FIFO,
- *   a IMP_SERVED_PRIORITY (subito sotto il server). Ogni POLLING_SERVER_CHECK misura il tempo
- *   di CPU consumato da IMP (orologio CPU del thread IMP) e lo riporta a SCHED_OTHER quando:
- *     a) la capacita' e' esaurita (il lavoro residuo continua al periodo successivo),
- *     b) IMP ha terminato il lavoro (ha gia' inviato la richiesta successiva), oppure
- *     c) il periodo sta per finire.
- * Fuori dalla capacita' IMP resta un normale task SCHED_OTHER (non real-time): puo' avanzare
- * solo quando la CPU non serve ai task real-time.
- *
- * Il server non si blocca mai sulle code: sono aperte in modalita' non bloccante.
- */
+polling server per gestire imp (che di base non e' rt)
 
-/* Tempo di CPU consumato finora dal thread con orologio 'clock' [ns] */
+gira ogni POLLING_SERVER_PERIOD, ha budget POLLING_SERVER_CAPACITY (th->wcet) e priorita' POLLING_SERVER_PRIORITY (calcolata con dm).
+il lavoro vero e proprio resta comunque in imp.c; il server non fa altro che
+prestargli la sua capacita' e alzarlo di priorita' quando serve.
+appena si sveglia ricarica il budget e butta un occhio sulla POLLING_QUEUE:
+se e' vuota pazienza, il budget di questo giro e' sprecato; se c'e' qualcosa
+sveglia imp su ACTIVATION_QUEUE e lo butta in SCHED_FIFO a IMP_SERVED_PRIORITY
+(giusto un pelo sotto al server).
+da li' ogni POLLING_SERVER_CHECK controlla dal cpu clock quanto ha consumato imp
+e lo rimette a SCHED_OTHER se finisce il budget (quello che avanza lo finisce al
+prossimo giro), se imp ha gia' finito e ha accodato la richiesta dopo, oppure se
+sta per scadere il periodo del server.
+fuori dal budget imp torna un normalissimo thread SCHED_OTHER, quindi gira solo
+quando i task rt lasciano la cpu libera. le code sono tutte non bloccanti
+perche' il server non deve mai piantarsi ad aspettare.
+*/
+
+//Tempo di CPU consumato finora dal thread con orologio 'clock' [ns]
 static long cpu_ns(clockid_t clock)
 {
 	struct timespec t;
@@ -42,7 +38,7 @@ static long cpu_ns(clockid_t clock)
 	return t.tv_sec * 1000000000L + t.tv_nsec;
 }
 
-/* Imposta la politica di scheduling di IMP */
+//Imposta la politica di scheduling di IMP
 static void imp_set_scheduling(pthread_t imp, int policy, int priority)
 {
 	struct sched_param param = { .sched_priority = priority };
@@ -54,7 +50,7 @@ static void imp_set_scheduling(pthread_t imp, int policy, int priority)
 	}
 }
 
-/* true se il prossimo controllo cadrebbe oltre la fine del periodo corrente */
+//true se il prossimo controllo cadrebbe oltre la fine del periodo corrente
 static bool period_ending(struct periodic_thread *th)
 {
 	struct timespec now;
@@ -119,7 +115,7 @@ void* pollingserver_task(void* arg){
 
 		// 3. Servizio: IMP esegue alla priorita' del server, dentro la capacita'
 		start_ns = cpu_ns(imp_clock);
-		imp_set_scheduling(imp, SCHED_FIFO, IMP_SERVED_PRIORITY);//passo a sched fifo da sched other
+		imp_set_scheduling(imp, SCHED_FIFO, IMP_SERVED_PRIORITY);//passo allo scheduling fifo rt
 
 		while (1) {
 			clock_nanosleep(CLOCK_MONOTONIC, 0, &check, NULL);	// qui gira IMP
@@ -139,8 +135,13 @@ void* pollingserver_task(void* arg){
 				break;
 		}
 
-		// 4. Fine del servizio in questo periodo: IMP torna non real-time
-		imp_set_scheduling(imp, SCHED_OTHER, 0);
+		// 4. Fine del servizio in questo periodo: IMP torna non real-time o va in idle se deve attendere di essere servito di nuovo
+		if (serving){
+			imp_set_scheduling(imp, SCHED_IDLE, 0);
+		}
+		else{
+			imp_set_scheduling(imp, SCHED_OTHER, 0);
+		}
 	}
 	return NULL;
 }
