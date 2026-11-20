@@ -55,16 +55,20 @@
 #define ASI_MET_PRIORITY            35		// Priorità più bassa tra i task RT (D = 1000 ms)
 
 #define POLLING_SERVER_ID              	6
-#define POLLING_SERVER_PERIOD           5000000 // 5 s come la deadline
-#define POLLING_SERVER_OFFSET  	        0       //non è un task periodico, quindi non ha offset
-#define POLLING_SERVER_CAPACITY        	2000000  // 2000 ms in modo che ho un uso del 40% della CPU per il polling server
-#define POLLING_SERVER_DEADLINE        	5000000 // 5 s così da avere priorità più bassa tra i task RT (D = 1000 ms)
+#define POLLING_SERVER_PERIOD           1200000 // 1200 ms
+#define POLLING_SERVER_OFFSET  	        0
+#define POLLING_SERVER_CAPACITY        	300000  // 300 ms di CPU per periodo: U = 25%
+#define POLLING_SERVER_DEADLINE        	1200000 // D = T = 1200 ms: deadline piu' lunga -> priorita' piu' bassa (DM)
 #define POLLING_SERVER_PRIORITY        	30
+#define POLLING_SERVER_CHECK            5000    // ogni 5 ms il server controlla la capacita' consumata da IMP
+// Periodo e capacita' piccoli: il server non tiene mai la CPU per un secondo intero, cosi' il carico
+// real-time resta sotto il limite di RT throttling di Linux (sched_rt_runtime_us = 950 ms ogni 1 s)
 
 
 #define IMP_ID                  7
 #define IMP_PERIOD              0       // non è un task periodico, quindi non ha periodo   
 #define IMP_PRIORITY 0
+#define IMP_SERVED_PRIORITY     (POLLING_SERVER_PRIORITY - 1)  // priorita' di IMP mentre e' servito: sotto il server
 #define IMP_WCET 2000000
 
 

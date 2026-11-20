@@ -49,6 +49,7 @@ struct imp_str {
 
 struct pollingserver_str {
 	struct periodic_thread th;
+	pthread_t *imp_thread;		// il thread IMP servito dal polling server
 };
 
 void* bus_scheduler_task(void* arg);		

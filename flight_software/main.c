@@ -229,16 +229,19 @@ int main(void){
 		fprintf(stderr, "Failed to create distribution thread\n");
 		return 1;
 	}
-	//pollingserver
-	if(create_thread_rt(&pollingserver_thread, &myattr, pollingserver_task, &pollingserver, pollingserver.th.priority) != 0) {
-		fprintf(stderr, "Failed to create pollingserver thread\n");
-		return 1;
-	}
-
 	// 8. TODO: Configure and create the OPTIONAL IMP task (not real-time)
+	// IMP viene creato prima del polling server, che deve conoscerne il thread per servirlo
 	pthread_attr_setschedpolicy(&myattr, SCHED_OTHER);
 	if(create_thread_rt(&imp_thread, &myattr, imp_task, &imp, imp.th.priority) != 0) {
 		fprintf(stderr, "Failed to create imp server thread\n");
+		return 1;
+	}
+
+	//pollingserver: real-time, serve IMP
+	pollingserver.imp_thread = &imp_thread;
+	pthread_attr_setschedpolicy(&myattr, SCHED_FIFO);
+	if(create_thread_rt(&pollingserver_thread, &myattr, pollingserver_task, &pollingserver, pollingserver.th.priority) != 0) {
+		fprintf(stderr, "Failed to create pollingserver thread\n");
 		return 1;
 	}
 
