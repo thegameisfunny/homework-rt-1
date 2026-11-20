@@ -13,20 +13,15 @@
 /*
 polling server per gestire imp (che di base non e' rt)
 
-gira ogni POLLING_SERVER_PERIOD, ha budget POLLING_SERVER_CAPACITY (th->wcet) e priorita' POLLING_SERVER_PRIORITY (calcolata con dm).
-il lavoro vero e proprio resta comunque in imp.c; il server non fa altro che
-prestargli la sua capacita' e alzarlo di priorita' quando serve.
-appena si sveglia ricarica il budget e butta un occhio sulla POLLING_QUEUE:
-se e' vuota pazienza, il budget di questo giro e' sprecato; se c'e' qualcosa
-sveglia imp su ACTIVATION_QUEUE e lo butta in SCHED_FIFO a IMP_SERVED_PRIORITY
-(giusto un pelo sotto al server).
-da li' ogni POLLING_SERVER_CHECK controlla dal cpu clock quanto ha consumato imp
-e lo rimette a SCHED_OTHER se finisce il budget (quello che avanza lo finisce al
-prossimo giro), se imp ha gia' finito e ha accodato la richiesta dopo, oppure se
-sta per scadere il periodo del server.
+gira ogni POLLING_SERVER_PERIOD, ha budget POLLING_SERVER_CAPACITY  e priorità POLLING_SERVER_PRIORITY.
+il task resta comunque in imp.c e il server gli presta il tempo di calcolo e lo alza di priorita' quando viene servito.
+appena si sveglia ricarica il budget, replenishment time infatti corrisponde al periodo, e butta un occhio sulla POLLING_QUEUE:
+se è vuota non deve fare niente nel periodo e quindi smette, se c'è qualche richiesta allora lo segnalo a imp su ACTIVATION_QUEUE e lo schedulo con SCHED_FIFO a priorità IMP_SERVED_PRIORITY.
+da li' ogni POLLING_SERVER_CHECK controlla dal cpu clock quanto ha consumato imp e lo rimette a SCHED_OTHER se finisce il budget, se imp non ha finito resta semplicemente in background fermo al suo punto, se imp ha gia' finito allora manda la richiesta.
+Dobbiamo aggiungere un modo per controllare quando sta per finire il periodo altrimenti ci ritroviamo che il server smette di eseguire e il task resta in SCHED_FIFO.
 fuori dal budget imp torna un normalissimo thread SCHED_OTHER, quindi gira solo
-quando i task rt lasciano la cpu libera. le code sono tutte non bloccanti
-perche' il server non deve mai piantarsi ad aspettare.
+quando i task rt lasciano la cpu libera, possiamo provare a implementare un blocco totale ma non è un problema il fatto che giri quando i task rt hanno finito.
+aprimao tutte code non bloccanti perche' il server non deve aspettare.
 */
 
 //Tempo di CPU consumato finora dal thread con orologio 'clock' [ns]
@@ -136,12 +131,15 @@ void* pollingserver_task(void* arg){
 		}
 
 		// 4. Fine del servizio in questo periodo: IMP torna non real-time o va in idle se deve attendere di essere servito di nuovo
+		/*
 		if (serving){
-			imp_set_scheduling(imp, SCHED_IDLE, 0);
+			imp_set_scheduling(imp, SCHED_IDLE, 0); SI POTREBBE ANCHE BLOCCARE COMPLETAMENTE IL THREAD IMP, MA NON E' NECESSARIO, SE HA TEMPO PER ESEGUIRE NON CI INFASTIDISCE. Non essendo RT non disturba i task RT.
 		}
 		else{
 			imp_set_scheduling(imp, SCHED_OTHER, 0);
 		}
+		*/
+		imp_set_scheduling(imp, SCHED_OTHER, 0);
 	}
 	return NULL;
 }
