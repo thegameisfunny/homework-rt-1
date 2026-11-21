@@ -73,7 +73,7 @@ void* imp_task(void* arg){
 
 		// 4. Update the image counter and send telemetry about the compression time
 		// SUGGESTION: Use the tlm_pack_imp function (telemetry.h) to pack the telemetry packet
-		imp->images=image.number;
+		imp->images=image.number; //immagine corrente inviata dalla fotocamera simulata
 		tlm_pack_imp(&packet, imp->images, compression_ms);
 		if (mq_send(tlm_qd, (const char *)&packet, sizeof(struct tlm_packet), 0)==-1){
 			perror("imp: Error sending telemetry packet");
